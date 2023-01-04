@@ -4,8 +4,14 @@ import React from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState } from "@codemirror/state";
 import interact from "./interact";
+import type { ViewUpdate } from "@codemirror/view";
 
-export function Editor() {
+type EditorProps = {
+  initialValue: string;
+  onViewChange: (update: ViewUpdate) => void;
+};
+
+export function Editor({ initialValue, onViewChange }: EditorProps) {
   const ref = React.useRef(null);
 
   React.useEffect(() => {
@@ -13,8 +19,9 @@ export function Editor() {
 
     const view = new EditorView({
       state: EditorState.create({
-        doc: "M 10 20\nL 30 40",
+        doc: initialValue,
         extensions: [
+          EditorView.updateListener.of(onViewChange),
           basicSetup,
           interact({
             rules: [
@@ -35,12 +42,7 @@ export function Editor() {
     });
 
     return () => view.destroy();
-  }, []);
+  }, [initialValue, onViewChange]);
 
-  return (
-    <div
-      className="w-[400px] border border-gray-700 rounded-md overflow-hidden"
-      ref={ref}
-    />
-  );
+  return <div className="h-full border rounded-md overflow-hidden" ref={ref} />;
 }

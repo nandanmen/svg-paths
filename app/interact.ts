@@ -214,14 +214,21 @@ const interactViewPlugin = ViewPlugin.define<ViewState>(
           }
         };
         document.addEventListener("mousemove", handleDrag);
+
+        const handleDragEnd = () => {
+          document.removeEventListener("mousemove", handleDrag);
+          this.state = "idle";
+          this.unhighlight();
+          if (match.rule.cursor) {
+            document.body.style.cursor = "auto";
+          }
+        };
+        document.addEventListener("mouseup", handleDragEnd, { once: true });
         document.addEventListener(
-          "mouseup",
-          () => {
-            document.removeEventListener("mousemove", handleDrag);
-            this.state = "idle";
-            this.unhighlight();
-            if (match.rule.cursor) {
-              document.body.style.cursor = "auto";
+          "keyup",
+          (e) => {
+            if (!this.isModKeyDown(e)) {
+              handleDragEnd();
             }
           },
           { once: true }

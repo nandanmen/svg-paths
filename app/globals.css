@@ -2,6 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
+.cm-editor {
+  height: 100%;
+}
+
 .cm-editor .cm-scroller {
   font-family: "Input Mono";
 }
