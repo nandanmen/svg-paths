@@ -13,11 +13,15 @@
 }
 
 .cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul {
-  @apply font-mono text-sm text-slate-11;
+  @apply font-mono text-sm text-slate-11 w-fit min-w-0;
+}
+
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul > li {
+  @apply px-2;
 }
 
 .cm-editor .cm-tooltip.cm-tooltip-autocomplete .cm-completionIcon {
-  @apply w-0;
+  @apply w-0 p-0;
 }
 
 .cm-editor .cm-scroller {

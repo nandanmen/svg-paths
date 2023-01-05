@@ -29,6 +29,10 @@ const getMessageFromLine = (
       return `Move the cursor to (${args.join(", ")})`;
     case "L":
       return `Draw a line to (${args.join(", ")})`;
+    case "Q": {
+      const [x1, y1, x, y] = args;
+      return `Draw a quadratic curve to (${x}, ${y}) using (${x1}, ${y1}) as the control point`;
+    }
     default:
       return null;
   }
@@ -88,7 +92,7 @@ export function PathEditor() {
             y: yOffset,
           }}
           transition={{ type: "spring", duration: 0.3 }}
-          className="absolute right-3 top-[3px] text-xs text-slate-9"
+          className="absolute right-3 top-[3px] text-xs text-slate-9 text-right max-w-[155px]"
         >
           {getMessageFromLine(line?.line, placeholder)}
         </motion.p>
@@ -106,14 +110,14 @@ const Container = ({ className = "", children }: ContainerProps) => {
   return (
     <div className={`border border-slate-4 relative ${className}`}>
       {children}
-      <Corner className="-top-1 -left-1" />
-      <Corner className="-top-1 -right-1" />
-      <Corner className="-bottom-1 -left-1" />
-      <Corner className="-bottom-1 -right-1" />
+      <Corner className="top-0 left-0 -translate-y-1/2 -translate-x-1/2" />
+      <Corner className="top-0 right-0 -translate-y-1/2 translate-x-1/2" />
+      <Corner className="bottom-0 left-0 translate-y-1/2 -translate-x-1/2" />
+      <Corner className="bottom-0 right-0 translate-y-1/2 translate-x-1/2" />
     </div>
   );
 };
 
 const Corner = ({ className = "" }) => {
-  return <div className={`w-1 h-1 bg-slate-8 absolute ${className}`} />;
+  return <div className={`w-1 h-1 bg-slate-10 absolute ${className}`} />;
 };
