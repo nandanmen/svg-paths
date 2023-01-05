@@ -17,7 +17,7 @@
   dependencies:
     regenerator-runtime "^0.13.11"
 
-"@codemirror/autocomplete@^6.0.0":
+"@codemirror/autocomplete@^6.0.0", "@codemirror/autocomplete@^6.4.0":
   version "6.4.0"
   resolved "https://registry.yarnpkg.com/@codemirror/autocomplete/-/autocomplete-6.4.0.tgz#76ac9a2a411a4cc6e13103014dba5e0fe601da5a"
   integrity sha512-HLF2PnZAm1s4kGs30EiqKMgD7XsYaQ0XJnMR0rofEWQ5t5D60SfqpDIkIh1ze5tiEbyUWm8+VJ6W1/erVvBMIA==
@@ -313,6 +313,11 @@
     picocolors "^1.0.0"
     tiny-glob "^0.2.9"
     tslib "^2.4.0"
+
+"@radix-ui/colors@^0.1.8":
+  version "0.1.8"
+  resolved "https://registry.yarnpkg.com/@radix-ui/colors/-/colors-0.1.8.tgz#b08c62536fc462a87632165fb28e9b18f9bd047e"
+  integrity sha512-jwRMXYwC0hUo0mv6wGpuw254Pd9p/R6Td5xsRpOmaWkUHlooNWqVcadgyzlRumMq3xfOTXwJReU0Jv+EIy4Jbw==
 
 "@replit/codemirror-interact@^6.0.2":
   version "6.0.2"
@@ -2898,6 +2903,11 @@ which@^2.0.1:
   integrity sha512-BLI3Tl1TW3Pvl70l3yq3Y64i+awpwXqsGBYWkkqMtnbXgrMD+yj7rhW0kuEDxzJaYXGjEW5ogapKNMEKNMjibA==
   dependencies:
     isexe "^2.0.0"
+
+windy-radix-palette@^0.4.1:
+  version "0.4.1"
+  resolved "https://registry.yarnpkg.com/windy-radix-palette/-/windy-radix-palette-0.4.1.tgz#4496c36512488ea913100a2879888449d3400c71"
+  integrity sha512-UlZ12esgTIHEmuYl0t5GUOlQAr0cp1CJ3183+SKjTAaPAY56DNFbX3zVJJw0Y6WSjnD9FRvjnUwBWRXQXSVvRA==
 
 word-wrap@^1.2.3:
   version "1.2.3"

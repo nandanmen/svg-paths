@@ -7,18 +7,21 @@ import type { ViewUpdate } from "@codemirror/view";
 import {
   autocompletion,
   type CompletionContext,
+  type CompletionResult,
 } from "@codemirror/autocomplete";
 import interact from "./interact";
 
-function myCompletions(context: CompletionContext) {
-  let word = context.matchBefore(/\w*/);
-  if (!word || word.from == word.to) return null;
+function myCompletions(context: CompletionContext): CompletionResult | null {
+  if (!context.explicit) return null;
   return {
-    from: word.from,
+    from: context.pos,
+    filter: false,
     options: [
-      { label: "match", type: "keyword" },
-      { label: "hello", type: "variable", info: "(World)" },
-      { label: "magic", type: "text", apply: "⠁⭒*.✩.*⭒⠁", detail: "macro" },
+      { label: "M 10 20" },
+      { label: "L 10 20" },
+      {
+        label: "Q 10 20 30 40",
+      },
     ],
   };
 }
@@ -27,6 +30,15 @@ type EditorProps = {
   initialValue: string;
   onViewChange: (update: ViewUpdate) => void;
 };
+
+const theme = EditorView.theme(
+  {
+    ".cm-content": {
+      caretColor: "white",
+    },
+  },
+  { dark: true }
+);
 
 export function Editor({ initialValue, onViewChange }: EditorProps) {
   const ref = React.useRef(null);
@@ -40,6 +52,7 @@ export function Editor({ initialValue, onViewChange }: EditorProps) {
         extensions: [
           EditorView.updateListener.of(onViewChange),
           basicSetup,
+          theme,
           autocompletion({
             override: [myCompletions],
           }),
@@ -64,10 +77,5 @@ export function Editor({ initialValue, onViewChange }: EditorProps) {
     return () => view.destroy();
   }, [initialValue, onViewChange]);
 
-  return (
-    <div
-      className="h-full text-neutral-200 border border-neutral-700 rounded-md overflow-hidden"
-      ref={ref}
-    />
-  );
+  return <div className="h-full text-gray-12 bg-backgroundText" ref={ref} />;
 }

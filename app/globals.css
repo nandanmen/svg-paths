@@ -2,27 +2,49 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url("https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,700;1,400;1,700&family=Source+Code+Pro:ital,wght@0,400;0,700;1,400;1,700&display=swap");
+
 .cm-editor {
   @apply h-full;
 }
 
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete {
+  @apply bg-slate-2 py-2 shadow-md border border-slate-6;
+}
+
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul {
+  @apply font-mono text-sm text-slate-11;
+}
+
+.cm-editor .cm-tooltip.cm-tooltip-autocomplete .cm-completionIcon {
+  @apply w-0;
+}
+
 .cm-editor .cm-scroller {
-  font-family: "Input Mono";
+  @apply font-mono;
 }
 
 .cm-editor .cm-content {
-  @apply p-4;
+  @apply py-4;
 }
 
 .cm-editor .cm-gutters {
-  display: none;
-  @apply bg-neutral-900 text-neutral-400 border-r border-dashed border-neutral-600;
+  @apply bg-background border-none;
 }
 
 .cm-editor .cm-activeLineGutter {
-  @apply bg-neutral-800;
+  @apply bg-background;
+}
+
+.cm-editor .cm-foldGutter .cm-gutterElement.cm-activeLineGutter {
+  @apply relative;
+}
+
+.cm-editor .cm-foldGutter .cm-gutterElement.cm-activeLineGutter:after {
+  content: "";
+  @apply absolute right-0 top-0 bottom-0 w-1 bg-slate-4;
 }
 
 .cm-editor .cm-activeLine {
-  @apply bg-neutral-800;
+  @apply bg-slate-2;
 }

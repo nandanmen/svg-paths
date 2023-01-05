@@ -1,3 +1,5 @@
+const defaultTheme = require("tailwindcss/defaultTheme");
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   content: [
@@ -6,7 +8,17 @@ module.exports = {
     "./components/**/*.{js,ts,jsx,tsx}",
   ],
   theme: {
-    extend: {},
+    extend: {
+      colors: {
+        background: "hsl(0, 0%, 5%)",
+        backgroundText: "hsl(200, 7.0%, 6.8%)",
+      },
+      fontFamily: {
+        sans: ["Nunito", ...defaultTheme.fontFamily.sans],
+        mono: ["Input Mono", ...defaultTheme.fontFamily.mono],
+        serif: ["PP Editorial New", ...defaultTheme.fontFamily.serif],
+      },
+    },
   },
-  plugins: [require("@tailwindcss/typography")],
+  plugins: [require("windy-radix-palette")],
 };

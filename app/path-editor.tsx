@@ -3,11 +3,27 @@
 import React from "react";
 import type { Line } from "@codemirror/state";
 import { ViewUpdate } from "@codemirror/view";
+import {
+  startCompletion,
+  completionStatus,
+  selectedCompletion,
+} from "@codemirror/autocomplete";
 import { motion } from "framer-motion";
 import { Editor } from "./editor";
 
-const getMessageFromLine = (line: Line) => {
-  const [command, ...args] = line.text.split(" ");
+const getMessageFromLine = (
+  line: Line | undefined | null,
+  placeholder: string | null
+) => {
+  if (!line) return null;
+
+  let text = line.text;
+  if (text.length === 0) {
+    if (!placeholder) return null;
+    text = placeholder;
+  }
+
+  const [command, ...args] = text.split(" ");
   switch (command) {
     case "M":
       return `Move the cursor to (${args.join(", ")})`;
@@ -18,7 +34,17 @@ const getMessageFromLine = (line: Line) => {
   }
 };
 
+const getYOffset = (node?: HTMLElement) => {
+  if (!node) return 0;
+  let el: HTMLElement = node;
+  if (node.nodeName === "#text" && node.parentElement) {
+    el = node.parentElement;
+  }
+  return el.offsetTop;
+};
+
 export function PathEditor() {
+  const [placeholder, setPlaceholder] = React.useState<string | null>(null);
   const [line, setLine] = React.useState<{
     node: Node;
     line: Line;
@@ -27,24 +53,67 @@ export function PathEditor() {
   const onViewChange = React.useCallback(({ state, view }: ViewUpdate) => {
     const currentSelection = state.selection.ranges[0].from;
     const line = state.doc.lineAt(currentSelection);
+
+    if (line.text === "" && !completionStatus(view.state)) {
+      startCompletion(view);
+    }
+
+    if (completionStatus(view.state) === "active") {
+      setPlaceholder(selectedCompletion(view.state)?.label ?? null);
+    } else {
+      setPlaceholder(null);
+    }
+
     const dom = view.domAtPos(currentSelection);
     setLine({ node: dom.node, line });
   }, []);
 
+  const yOffset = getYOffset(line?.node as HTMLElement);
   return (
     <div className="relative h-full">
-      <Editor initialValue={`M 10 20\nL 30 40`} onViewChange={onViewChange} />
-      {line && (
+      <Container className="h-full">
+        <Editor initialValue={`M 10 20\nL 30 40`} onViewChange={onViewChange} />
+      </Container>
+      {placeholder && (
+        <p
+          style={{ top: yOffset }}
+          className="absolute top-0 left-[40px] font-mono italic text-slate-9"
+        >
+          {placeholder}
+        </p>
+      )}
+      {(line || placeholder) && (
         <motion.p
           animate={{
-            y: (line.node.parentElement?.offsetTop ?? 0) + 4,
+            y: yOffset,
           }}
           transition={{ type: "spring", duration: 0.3 }}
-          className="absolute right-5 top-0 text-xs text-neutral-400"
+          className="absolute right-3 top-[3px] text-xs text-slate-9"
         >
-          {getMessageFromLine(line.line)}
+          {getMessageFromLine(line?.line, placeholder)}
         </motion.p>
       )}
     </div>
   );
 }
+
+type ContainerProps = {
+  className?: string;
+  children?: React.ReactNode;
+};
+
+const Container = ({ className = "", children }: ContainerProps) => {
+  return (
+    <div className={`border border-slate-4 relative ${className}`}>
+      {children}
+      <Corner className="-top-1 -left-1" />
+      <Corner className="-top-1 -right-1" />
+      <Corner className="-bottom-1 -left-1" />
+      <Corner className="-bottom-1 -right-1" />
+    </div>
+  );
+};
+
+const Corner = ({ className = "" }) => {
+  return <div className={`w-1 h-1 bg-slate-8 absolute ${className}`} />;
+};
