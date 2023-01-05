@@ -3,9 +3,26 @@
 @tailwind utilities;
 
 .cm-editor {
-  height: 100%;
+  @apply h-full;
 }
 
 .cm-editor .cm-scroller {
   font-family: "Input Mono";
+}
+
+.cm-editor .cm-content {
+  @apply p-4;
+}
+
+.cm-editor .cm-gutters {
+  display: none;
+  @apply bg-neutral-900 text-neutral-400 border-r border-dashed border-neutral-600;
+}
+
+.cm-editor .cm-activeLineGutter {
+  @apply bg-neutral-800;
+}
+
+.cm-editor .cm-activeLine {
+  @apply bg-neutral-800;
 }

@@ -3,8 +3,25 @@
 import React from "react";
 import { EditorView, basicSetup } from "codemirror";
 import { EditorState } from "@codemirror/state";
-import interact from "./interact";
 import type { ViewUpdate } from "@codemirror/view";
+import {
+  autocompletion,
+  type CompletionContext,
+} from "@codemirror/autocomplete";
+import interact from "./interact";
+
+function myCompletions(context: CompletionContext) {
+  let word = context.matchBefore(/\w*/);
+  if (!word || word.from == word.to) return null;
+  return {
+    from: word.from,
+    options: [
+      { label: "match", type: "keyword" },
+      { label: "hello", type: "variable", info: "(World)" },
+      { label: "magic", type: "text", apply: "⠁⭒*.✩.*⭒⠁", detail: "macro" },
+    ],
+  };
+}
 
 type EditorProps = {
   initialValue: string;
@@ -23,6 +40,9 @@ export function Editor({ initialValue, onViewChange }: EditorProps) {
         extensions: [
           EditorView.updateListener.of(onViewChange),
           basicSetup,
+          autocompletion({
+            override: [myCompletions],
+          }),
           interact({
             rules: [
               {
@@ -44,5 +64,10 @@ export function Editor({ initialValue, onViewChange }: EditorProps) {
     return () => view.destroy();
   }, [initialValue, onViewChange]);
 
-  return <div className="h-full border rounded-md overflow-hidden" ref={ref} />;
+  return (
+    <div
+      className="h-full text-neutral-200 border border-neutral-700 rounded-md overflow-hidden"
+      ref={ref}
+    />
+  );
 }

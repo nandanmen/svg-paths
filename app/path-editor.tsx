@@ -10,9 +10,9 @@ const getMessageFromLine = (line: Line) => {
   const [command, ...args] = line.text.split(" ");
   switch (command) {
     case "M":
-      return `Moves the cursor to (${args.join(", ")})`;
+      return `Move the cursor to (${args.join(", ")})`;
     case "L":
-      return `Draws a line to (${args.join(", ")})`;
+      return `Draw a line to (${args.join(", ")})`;
     default:
       return null;
   }
@@ -37,10 +37,10 @@ export function PathEditor() {
       {line && (
         <motion.p
           animate={{
-            y: (line.node.parentElement?.offsetTop ?? 0) + 2,
+            y: (line.node.parentElement?.offsetTop ?? 0) + 4,
           }}
-          transition={{ type: "spring", duration: 0.5 }}
-          className="absolute right-2 top-0 text-sm text-neutral-400"
+          transition={{ type: "spring", duration: 0.3 }}
+          className="absolute right-5 top-0 text-xs text-neutral-400"
         >
           {getMessageFromLine(line.line)}
         </motion.p>
