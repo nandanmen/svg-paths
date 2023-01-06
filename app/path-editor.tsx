@@ -38,6 +38,12 @@ const getMessageFromLine = (
   }
 };
 
+type PathEditorProps = {
+  initialValue: string;
+  onValueChange: (value: string) => void;
+  onPlaceholderChange: (placeholder: string | null) => void;
+};
+
 const getYOffset = (node?: HTMLElement) => {
   if (!node) return 0;
   let el: HTMLElement = node;
@@ -47,36 +53,51 @@ const getYOffset = (node?: HTMLElement) => {
   return el.offsetTop;
 };
 
-export function PathEditor() {
+export function PathEditor({
+  initialValue,
+  onValueChange,
+  onPlaceholderChange,
+}: PathEditorProps) {
   const [placeholder, setPlaceholder] = React.useState<string | null>(null);
   const [line, setLine] = React.useState<{
     node: Node;
     line: Line;
   } | null>(null);
 
-  const onViewChange = React.useCallback(({ state, view }: ViewUpdate) => {
-    const currentSelection = state.selection.ranges[0].from;
-    const line = state.doc.lineAt(currentSelection);
+  React.useEffect(() => {
+    onPlaceholderChange(placeholder);
+  }, [placeholder, onPlaceholderChange]);
 
-    if (line.text === "" && !completionStatus(view.state)) {
-      startCompletion(view);
-    }
+  const onViewChange = React.useCallback(
+    ({ state, view, docChanged }: ViewUpdate) => {
+      const currentSelection = state.selection.ranges[0].from;
+      const line = state.doc.lineAt(currentSelection);
 
-    if (completionStatus(view.state) === "active") {
-      setPlaceholder(selectedCompletion(view.state)?.label ?? null);
-    } else {
-      setPlaceholder(null);
-    }
+      if (line.text === "" && !completionStatus(view.state)) {
+        startCompletion(view);
+      }
 
-    const dom = view.domAtPos(currentSelection);
-    setLine({ node: dom.node, line });
-  }, []);
+      if (completionStatus(view.state) === "active") {
+        setPlaceholder(selectedCompletion(view.state)?.label ?? null);
+      } else {
+        setPlaceholder(null);
+      }
+
+      const dom = view.domAtPos(currentSelection);
+      setLine({ node: dom.node, line });
+
+      if (docChanged) {
+        onValueChange(state.doc.toString());
+      }
+    },
+    [onValueChange]
+  );
 
   const yOffset = getYOffset(line?.node as HTMLElement);
   return (
     <div className="relative h-full">
       <Container className="h-full">
-        <Editor initialValue={`M 10 20\nL 30 40`} onViewChange={onViewChange} />
+        <Editor initialValue={initialValue} onViewChange={onViewChange} />
       </Container>
       {placeholder && (
         <p
@@ -92,7 +113,7 @@ export function PathEditor() {
             y: yOffset,
           }}
           transition={{ type: "spring", duration: 0.3 }}
-          className="absolute right-3 top-[3px] text-xs text-slate-9 text-right max-w-[155px]"
+          className="absolute right-3 top-[3px] text-xs text-slate-9 text-right max-w-[160px]"
         >
           {getMessageFromLine(line?.line, placeholder)}
         </motion.p>
@@ -106,7 +127,7 @@ type ContainerProps = {
   children?: React.ReactNode;
 };
 
-const Container = ({ className = "", children }: ContainerProps) => {
+export const Container = ({ className = "", children }: ContainerProps) => {
   return (
     <div className={`border border-slate-4 relative ${className}`}>
       {children}

@@ -12,7 +12,7 @@ export default function RootLayout({
         head.tsx. Find out more at https://beta.nextjs.org/docs/api-reference/file-conventions/head
       */}
       <head />
-      <body className="bg-background">{children}</body>
+      <body className="bg-background text-slate-12">{children}</body>
     </html>
   );
 }

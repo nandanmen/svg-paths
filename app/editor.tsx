@@ -18,9 +18,9 @@ function myCompletions(context: CompletionContext): CompletionResult | null {
     filter: false,
     options: [
       { label: "M 10 20" },
-      { label: "L 10 20" },
+      { label: "L 30 40" },
       {
-        label: "Q 10 20 30 40",
+        label: "Q 50 90 80 50",
       },
     ],
   };
@@ -75,7 +75,8 @@ export function Editor({ initialValue, onViewChange }: EditorProps) {
     });
 
     return () => view.destroy();
-  }, [initialValue, onViewChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onViewChange]);
 
   return <div className="h-full text-gray-12 bg-backgroundText" ref={ref} />;
 }
