@@ -9,7 +9,7 @@
 }
 
 .cm-editor .cm-tooltip.cm-tooltip-autocomplete {
-  @apply bg-slate-2 py-2 shadow-md border border-slate-6;
+  @apply bg-slate-3 py-2 shadow-md border border-slate-6;
 }
 
 .cm-editor .cm-tooltip.cm-tooltip-autocomplete > ul {
@@ -50,5 +50,5 @@
 }
 
 .cm-editor .cm-activeLine {
-  @apply bg-slate-2;
+  @apply bg-slate-3;
 }

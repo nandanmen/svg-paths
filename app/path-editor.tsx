@@ -97,7 +97,25 @@ export function PathEditor({
   return (
     <div className="relative h-full">
       <Container className="h-full">
-        <Editor initialValue={initialValue} onViewChange={onViewChange} />
+        <Editor
+          initialValue={initialValue}
+          onViewChange={onViewChange}
+          interactRules={[
+            {
+              regexp: /-?\b\d+\.?\d*\b/g,
+              cursor: "ew-resize",
+              onDrag: (text, setText, e) => {
+                const newVal = Number(text) + e.movementX;
+                if (isNaN(newVal)) return;
+                setText(newVal.toString());
+              },
+              onDragStart: ({ pos }) => console.log("drag start " + pos),
+              onDragEnd: ({ pos }) => console.log("drag end " + pos),
+              onHoverStart: ({ pos }) => console.log("hover start " + pos),
+              onHoverEnd: ({ pos }) => console.log("hover end " + pos),
+            },
+          ]}
+        />
       </Container>
       {placeholder && (
         <p
@@ -113,7 +131,7 @@ export function PathEditor({
             y: yOffset,
           }}
           transition={{ type: "spring", duration: 0.3 }}
-          className="absolute right-3 top-[3px] text-xs text-slate-9 text-right max-w-[160px]"
+          className="absolute right-3 top-[3px] text-xs text-slate-9 text-right max-w-[160px] pointer-events-none"
         >
           {getMessageFromLine(line?.line, placeholder)}
         </motion.p>

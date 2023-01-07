@@ -9,7 +9,7 @@ import {
   type CompletionContext,
   type CompletionResult,
 } from "@codemirror/autocomplete";
-import interact from "./interact";
+import interact, { type InteractRule } from "./interact";
 
 function myCompletions(context: CompletionContext): CompletionResult | null {
   if (!context.explicit) return null;
@@ -29,6 +29,7 @@ function myCompletions(context: CompletionContext): CompletionResult | null {
 type EditorProps = {
   initialValue: string;
   onViewChange: (update: ViewUpdate) => void;
+  interactRules?: InteractRule[];
 };
 
 const theme = EditorView.theme(
@@ -40,7 +41,11 @@ const theme = EditorView.theme(
   { dark: true }
 );
 
-export function Editor({ initialValue, onViewChange }: EditorProps) {
+export function Editor({
+  initialValue,
+  onViewChange,
+  interactRules = [],
+}: EditorProps) {
   const ref = React.useRef(null);
 
   React.useEffect(() => {
@@ -57,17 +62,7 @@ export function Editor({ initialValue, onViewChange }: EditorProps) {
             override: [myCompletions],
           }),
           interact({
-            rules: [
-              {
-                regexp: /-?\b\d+\.?\d*\b/g,
-                cursor: "ew-resize",
-                onDrag: (text, setText, e) => {
-                  const newVal = Number(text) + e.movementX;
-                  if (isNaN(newVal)) return;
-                  setText(newVal.toString());
-                },
-              },
-            ],
+            rules: interactRules,
           }),
         ],
       }),

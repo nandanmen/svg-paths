@@ -21,6 +21,10 @@ export interface InteractRule {
   style?: any;
   onClick?: (text: string, setText: (t: string) => void, e: MouseEvent) => void;
   onDrag?: (text: string, setText: (t: string) => void, e: MouseEvent) => void;
+  onDragStart?: (target: Target) => void;
+  onDragEnd?: (target: Target) => void;
+  onHoverStart?: (target: Target) => void;
+  onHoverEnd?: (target: Target) => void;
 }
 
 const mark = Decoration.mark({ class: "cm-interact" });
@@ -28,8 +32,7 @@ const setInteract = StateEffect.define<Target | null>();
 
 const interactTheme = EditorView.theme({
   ".cm-interact": {
-    background: "rgba(128, 128, 255, 0.2)",
-    borderRadius: "4px",
+    background: "var(--blue8)",
   },
 });
 
@@ -200,6 +203,7 @@ const interactViewPlugin = ViewPlugin.define<ViewState>(
               Math.abs(dragEvent.clientY - e.clientY) > 3
             ) {
               this.state = "dragging";
+              match.rule.onDragStart?.(match);
               if (match.rule.cursor) {
                 document.body.style.cursor = match.rule.cursor;
               }
@@ -216,6 +220,7 @@ const interactViewPlugin = ViewPlugin.define<ViewState>(
         document.addEventListener("mousemove", handleDrag);
 
         const handleDragEnd = () => {
+          match.rule.onDragEnd?.(match);
           document.removeEventListener("mousemove", handleDrag);
           this.state = "idle";
           this.unhighlight();
@@ -242,11 +247,17 @@ const interactViewPlugin = ViewPlugin.define<ViewState>(
         if (!this.isModKeyDown(e)) return;
 
         if (this.state !== "dragging") {
-          this.hovering = this.getMatch();
-          if (this.hovering) {
-            this.highlight(this.hovering);
+          const match = this.getMatch();
+          if (match) {
+            this.highlight(match);
+            match.rule.onHoverStart?.(match);
+            this.hovering = match;
           } else {
+            if (this.hovering && this.hovering.rule) {
+              this.hovering.rule.onHoverEnd?.(this.hovering);
+            }
             this.unhighlight();
+            this.hovering = null;
           }
         }
       },

@@ -1,11 +1,32 @@
 "use client";
 
 import React from "react";
+import { motion } from "framer-motion";
 import { PathEditor } from "./path-editor";
 
 type Command = {
   type: "M" | "L" | "Q";
   args: number[];
+};
+
+type IPathCommandsContext = {
+  commands: Command[];
+  previewCommands: Command[];
+  activeCommand: { index: number; argIndex: number } | null;
+};
+
+const PathCommandsContext = React.createContext<IPathCommandsContext | null>(
+  null
+);
+
+const usePathCommands = () => {
+  const context = React.useContext(PathCommandsContext);
+  if (!context) {
+    throw new Error(
+      "usePathCommands must be used within a PathCommandsProvider"
+    );
+  }
+  return context;
 };
 
 export function App() {
@@ -26,23 +47,29 @@ export function App() {
       <div className="w-fit overflow-x-auto">
         <main className="aspect-square h-full">
           <GridSquare size={100} gap={10} padding={4}>
-            <Lines commands={previewCommands} />
-            <path
-              d={`${value}\n${placeholder}`}
-              stroke="currentColor"
-              strokeWidth="1"
-              className="text-slate-9"
-              fill="none"
-            />
-            <path
-              d={value}
-              stroke="currentColor"
-              strokeWidth="1"
-              className="text-slate-12"
-              fill="none"
-            />
-            <CurvePoints commands={previewCommands} />
-            <CursorPoints commands={previewCommands} />
+            <PathCommandsContext.Provider
+              value={{ commands, previewCommands, activeCommand: null }}
+            >
+              <Lines preview />
+              <Lines />
+              <path
+                d={`${value}\n${placeholder ?? ""}`}
+                stroke="currentColor"
+                strokeWidth="1"
+                className="text-slate-9"
+                fill="none"
+              />
+              <path
+                d={value}
+                stroke="currentColor"
+                strokeWidth="1"
+                className="text-slate-12"
+                fill="none"
+              />
+              <CurvePoints preview />
+              <CurvePoints />
+              <CursorPoints />
+            </PathCommandsContext.Provider>
           </GridSquare>
         </main>
       </div>
@@ -50,22 +77,22 @@ export function App() {
   );
 }
 
-const Lines = ({ commands }: { commands: Command[] }) => {
+const Lines = ({ preview = false }: { preview?: boolean }) => {
+  const { commands, previewCommands } = usePathCommands();
+  const _commands = preview ? previewCommands : commands;
   return (
     <>
-      {commands.map((command, i) => {
-        const cursor = getCursorAtIndex(commands, i);
+      {_commands.map((command, i) => {
+        const cursor = getCursorAtIndex(commands, i - 1);
         switch (command.type) {
           case "M":
             return (
-              <line
+              <Line
                 key={`${command.type}-${i}`}
                 x1={cursor.x}
                 y1={cursor.y}
                 x2={command.args[0]}
                 y2={command.args[1]}
-                stroke="currentColor"
-                strokeWidth="0.5"
                 className="text-slate-6"
                 strokeDasharray="1"
               />
@@ -73,28 +100,19 @@ const Lines = ({ commands }: { commands: Command[] }) => {
           case "Q": {
             const [x1, y1, x, y] = command.args;
             return (
-              <React.Fragment key={`${command.type}-${i}`}>
-                <line
+              <g
+                key={`${command.type}-${i}`}
+                className={preview ? "text-slate-6" : "text-blue-9"}
+              >
+                <Line
                   x1={cursor.x}
                   y1={cursor.y}
                   x2={x1}
                   y2={y1}
-                  stroke="currentColor"
-                  strokeWidth="0.5"
-                  className="text-slate-6"
                   strokeDasharray="1"
                 />
-                <line
-                  x1={x1}
-                  y1={y1}
-                  x2={x}
-                  y2={y}
-                  stroke="currentColor"
-                  strokeWidth="0.5"
-                  className="text-slate-6"
-                  strokeDasharray="1"
-                />
-              </React.Fragment>
+                <Line x1={x1} y1={y1} x2={x} y2={y} strokeDasharray="1" />
+              </g>
             );
           }
           default:
@@ -105,24 +123,44 @@ const Lines = ({ commands }: { commands: Command[] }) => {
   );
 };
 
-const CurvePoints = ({ commands }: { commands: Command[] }) => {
+const Line = (props: React.ComponentPropsWithoutRef<"line">) => {
+  return <line stroke="currentColor" strokeWidth="0.5" {...props} />;
+};
+
+const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
+  const { commands, previewCommands } = usePathCommands();
+  const _commands = preview ? previewCommands : commands;
   return (
     <>
-      {commands.map((command, i) => {
-        const cursor = getCursorAtIndex(commands, i);
+      {_commands.map((command, i) => {
         switch (command.type) {
           case "Q": {
             const [x, y] = command.args;
             return (
-              <rect
-                key={`${command.type}-${i}`}
-                x={x - 1}
-                y={y - 1}
-                width="2"
-                height="2"
-                className="fill-slate-1 stroke-slate-12"
-                strokeWidth="0.2"
-              />
+              <motion.g
+                style={{ x, y, rotate: 45 }}
+                className={preview ? "text-slate-6" : "text-blue-9"}
+              >
+                {!preview && (
+                  <rect
+                    width="3"
+                    height="3"
+                    x="-1.5"
+                    y="-1.5"
+                    stroke="currentColor"
+                    fill="none"
+                    strokeWidth="0.2"
+                  />
+                )}
+                <rect
+                  key={`${command.type}-${i}`}
+                  x="-1"
+                  y="-1"
+                  width="2"
+                  height="2"
+                  fill="currentColor"
+                />
+              </motion.g>
             );
           }
           default:
@@ -133,9 +171,17 @@ const CurvePoints = ({ commands }: { commands: Command[] }) => {
   );
 };
 
-const CursorPoints = ({ commands }: { commands: Command[] }) => {
+const CursorPoints = () => {
+  const { commands } = usePathCommands();
   return (
     <>
+      <circle
+        r="1"
+        cx="0"
+        cy="0"
+        className="fill-slate-2 stroke-slate-12"
+        strokeWidth="0.2"
+      />
       {commands.map((_, i) => {
         const { x, y } = getCursorAtIndex(commands, i);
         return (
@@ -144,8 +190,8 @@ const CursorPoints = ({ commands }: { commands: Command[] }) => {
             r="1"
             cx={x}
             cy={y}
-            className="fill-slate-1 stroke-slate-12"
-            stroke-width="0.2"
+            className="fill-slate-2 stroke-slate-12"
+            strokeWidth="0.2"
           />
         );
       })}
@@ -161,7 +207,9 @@ type Cursor = {
 const getCursorAtIndex = (commands: Command[], index: number): Cursor => {
   const cursor: Cursor = { x: 0, y: 0 };
 
-  commands.slice(0, index).forEach((command) => {
+  if (index < 0) return cursor;
+
+  commands.slice(0, index + 1).forEach((command) => {
     switch (command.type) {
       case "M":
       case "L":
@@ -215,7 +263,7 @@ const GridSquare = ({ size, gap, padding, children }: GridSquareProps) => {
       {cols.map((x) => {
         return (
           <line
-            className="text-slate-2"
+            className="text-slate-3"
             key={x}
             x1={x}
             x2={x}
@@ -229,7 +277,7 @@ const GridSquare = ({ size, gap, padding, children }: GridSquareProps) => {
       {rows.map((y) => {
         return (
           <line
-            className="text-slate-2"
+            className="text-slate-3"
             key={y}
             x1={-padding}
             x2={size + padding * 2}
