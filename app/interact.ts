@@ -25,6 +25,7 @@ export interface InteractRule {
   onDragEnd?: (target: Target, view: EditorView) => void;
   onHoverStart?: (target: Target, view: EditorView) => void;
   onHoverEnd?: (target: Target, view: EditorView) => void;
+  onMatchChange?: (target: Target | null, view: EditorView) => void;
 }
 
 const mark = Decoration.mark({ class: "cm-interact" });
@@ -76,6 +77,7 @@ const setCursor = (cursor?: string) =>
 interface ViewState extends PluginValue {
   state: "idle" | "pressed" | "dragging";
   hovering: Target | null;
+  match: Target | null;
   mouseX: number;
   mouseY: number;
   deco: DecorationSet;
@@ -90,6 +92,7 @@ const interactViewPlugin = ViewPlugin.define<ViewState>(
   (view) => ({
     state: "idle",
     hovering: null,
+    match: null,
     mouseX: 0,
     mouseY: 0,
     deco: Decoration.none,
@@ -140,12 +143,16 @@ const interactViewPlugin = ViewPlugin.define<ViewState>(
 
     // highlight a target (e.g. currently dragging or hovering)
     highlight(target) {
+      this.match = target;
+      target.rule.onMatchChange?.(target, view);
       view.dispatch({
         effects: [setInteract.of(target), ...setCursor(target.rule.cursor)],
       });
     },
 
     unhighlight() {
+      this.match?.rule?.onMatchChange?.(null, view);
+      this.match = null;
       view.dispatch({
         effects: [setInteract.of(null), clearCursor()],
       });
@@ -190,6 +197,7 @@ const interactViewPlugin = ViewPlugin.define<ViewState>(
         if (!match) return;
         e.preventDefault();
 
+        this.highlight(match);
         this.state = "pressed";
 
         if (match.rule.onClick) {
@@ -211,7 +219,6 @@ const interactViewPlugin = ViewPlugin.define<ViewState>(
           }
 
           if (this.state === "dragging") {
-            this.highlight(match);
             if (match.rule.onDrag) {
               match.rule.onDrag(match.text, this.updateText(match), dragEvent);
             }

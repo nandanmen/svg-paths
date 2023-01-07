@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { PathEditor } from "./path-editor";
 import { parseSVG, type Command } from "svg-path-parser";
 
@@ -153,8 +153,16 @@ const Line = (props: React.ComponentPropsWithoutRef<"line">) => {
   return <line stroke="currentColor" strokeWidth="0.5" {...props} />;
 };
 
+const isActive = (
+  activeCommand: ActiveCommand | null,
+  i: number,
+  props: string[]
+) => {
+  return activeCommand?.index === i && props.includes(activeCommand?.prop);
+};
+
 const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
-  const { commands, previewCommands } = usePathCommands();
+  const { commands, previewCommands, activeCommand } = usePathCommands();
   const _commands = preview ? previewCommands : commands;
   return (
     <>
@@ -162,23 +170,24 @@ const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
         switch (command.code) {
           case "Q": {
             const { x1, y1 } = command;
+            const active = isActive(activeCommand, i, ["x1", "y1"]);
             return (
               <motion.g
                 key={`${command.code}-${i}`}
                 style={{ x: x1, y: y1, rotate: 45 }}
                 className={preview ? "text-slate-6" : "text-blue-9"}
               >
-                {!preview && (
-                  <rect
-                    width="3"
-                    height="3"
-                    x="-1.5"
-                    y="-1.5"
-                    stroke="currentColor"
-                    fill="none"
-                    strokeWidth="0.2"
-                  />
-                )}
+                <motion.rect
+                  width="3"
+                  height="3"
+                  x="-1.5"
+                  y="-1.5"
+                  stroke="currentColor"
+                  fill="none"
+                  strokeWidth="0.2"
+                  animate={{ scale: !preview && active ? 1 : 0 }}
+                  initial={{ scale: 0 }}
+                />
                 <rect x="-1" y="-1" width="2" height="2" fill="currentColor" />
               </motion.g>
             );
@@ -192,7 +201,7 @@ const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
 };
 
 const CursorPoints = () => {
-  const { commands } = usePathCommands();
+  const { commands, activeCommand } = usePathCommands();
   return (
     <>
       <circle
@@ -204,15 +213,25 @@ const CursorPoints = () => {
       />
       {commands.map((_, i) => {
         const { x, y } = getCursorAtIndex(commands, i);
+        const active = isActive(activeCommand, i, ["x", "y"]);
         return (
-          <circle
-            key={`${x}-${y}`}
-            r="1"
-            cx={x}
-            cy={y}
-            className="fill-slate-2 stroke-slate-12"
-            strokeWidth="0.2"
-          />
+          <motion.g style={{ x, y }} key={i}>
+            <motion.circle
+              cx="0"
+              cy="0"
+              r="2"
+              className="fill-blue-8"
+              animate={{ scale: active ? 1 : 0 }}
+              initial={{ scale: 0 }}
+            />
+            <circle
+              r="1"
+              cx="0"
+              cy="0"
+              className="fill-slate-2 stroke-slate-12"
+              strokeWidth="0.2"
+            />
+          </motion.g>
         );
       })}
     </>
@@ -301,29 +320,36 @@ const GridSquare = ({ size, gap, padding, children }: GridSquareProps) => {
             <Line key={y} x1={min} x2={max} y1={y} y2={y} strokeWidth="0.2" />
           );
         })}
-        {activeLine && (
-          <g className="text-slate-8">
-            {activeLine.axis === "x" ? (
-              <Line
-                x1={activeLine.offset}
-                x2={activeLine.offset}
-                y1={min}
-                y2={max}
-                strokeWidth="0.5"
-                strokeDasharray="2 1"
-              />
-            ) : (
-              <Line
-                y1={activeLine.offset}
-                y2={activeLine.offset}
-                x1={min}
-                x2={max}
-                strokeWidth="0.5"
-                strokeDasharray="2 1"
-              />
-            )}
-          </g>
-        )}
+        <AnimatePresence>
+          {activeLine && (
+            <motion.g
+              className="text-slate-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {activeLine.axis === "x" ? (
+                <Line
+                  x1={activeLine.offset}
+                  x2={activeLine.offset}
+                  y1={min}
+                  y2={max}
+                  strokeWidth="0.5"
+                  strokeDasharray="2 1"
+                />
+              ) : (
+                <Line
+                  y1={activeLine.offset}
+                  y2={activeLine.offset}
+                  x1={min}
+                  x2={max}
+                  strokeWidth="0.5"
+                  strokeDasharray="2 1"
+                />
+              )}
+            </motion.g>
+          )}
+        </AnimatePresence>
       </g>
       {children}
     </svg>

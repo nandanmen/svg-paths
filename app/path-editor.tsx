@@ -140,12 +140,11 @@ export function PathEditor({
                 if (isNaN(newVal)) return;
                 setText(newVal.toString());
               },
-              onDragStart: ({ pos }, view) =>
-                onActiveCommandChange(createCommandUpdate(pos, view)),
-              onDragEnd: () => onActiveCommandChange(null),
-              onHoverStart: ({ pos }, view) =>
-                onActiveCommandChange(createCommandUpdate(pos, view)),
-              onHoverEnd: () => onActiveCommandChange(null),
+              onMatchChange: (target, view) => {
+                if (!target) onActiveCommandChange(null);
+                else
+                  onActiveCommandChange(createCommandUpdate(target.pos, view));
+              },
             },
           ]}
         />
