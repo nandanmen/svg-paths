@@ -8,8 +8,11 @@ import {
   completionStatus,
   selectedCompletion,
 } from "@codemirror/autocomplete";
-import { motion } from "framer-motion";
+import { motion, transform } from "framer-motion";
+import Balancer from "react-wrap-balancer";
 import { Editor } from "./editor";
+
+const transformSlide = transform([-1, 1], [-0.5, 0.5], { clamp: false });
 
 const getMessageFromLine = (
   line: Line | undefined | null,
@@ -26,11 +29,15 @@ const getMessageFromLine = (
   const [command, ...args] = text.split(" ");
   switch (command) {
     case "M":
-      return `Move the cursor to (${args.join(", ")})`;
+      return `Move the cursor to (${args
+        .map((x) => Number(x).toFixed(1))
+        .join(", ")})`;
     case "L":
-      return `Draw a line to (${args.join(", ")})`;
+      return `Draw a line to (${args
+        .map((x) => Number(x).toFixed(1))
+        .join(", ")})`;
     case "Q": {
-      const [x1, y1, x, y] = args;
+      const [x1, y1, x, y] = args.map((x) => Number(x).toFixed(1));
       return `Draw a quadratic curve to (${x}, ${y}) using (${x1}, ${y1}) as the control point`;
     }
     default:
@@ -136,7 +143,7 @@ export function PathEditor({
               regexp: /-?\b\d+\.?\d*\b/g,
               cursor: "ew-resize",
               onDrag: (text, setText, e) => {
-                const newVal = Number(text) + e.movementX;
+                const newVal = Number(text) + transformSlide(e.movementX);
                 if (isNaN(newVal)) return;
                 setText(newVal.toString());
               },
@@ -160,12 +167,15 @@ export function PathEditor({
       {(line || placeholder) && (
         <motion.p
           animate={{
-            y: yOffset,
+            y: yOffset + 1,
+          }}
+          style={{
+            x: "calc(-100% - 16px)",
           }}
           transition={{ type: "spring", duration: 0.3 }}
-          className="absolute right-3 top-[3px] text-xs text-slate-9 text-right max-w-[160px] pointer-events-none"
+          className="absolute left-0 top-[3px] text-[0.65rem] text-slate-9 text-right max-w-[170px] pointer-events-none font-mono leading-tight"
         >
-          {getMessageFromLine(line?.line, placeholder)}
+          <Balancer>{getMessageFromLine(line?.line, placeholder)}</Balancer>
         </motion.p>
       )}
     </div>

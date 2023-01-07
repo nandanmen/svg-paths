@@ -36,6 +36,8 @@ const usePathCommands = () => {
   return context;
 };
 
+const parse = (value: string) => {};
+
 export function App() {
   const [value, setValue] = React.useState("M 10 20");
   const [placeholder, setPlaceholder] = React.useState<string | null>(null);
@@ -43,9 +45,17 @@ export function App() {
     command: number;
     arg: number;
   } | null>(null);
+  const [commands, setCommands] = React.useState<Command[]>([]);
+  const [previewCommands, setPreviewCommands] = React.useState<Command[]>([]);
 
-  const commands = parseSVG(value);
-  const previewCommands = parseSVG(`${value}\n${placeholder ?? ""}`);
+  React.useEffect(() => {
+    try {
+      const commands = parseSVG(value);
+      const previewCommands = parseSVG(`${value}\n${placeholder ?? ""}`);
+      setCommands(commands);
+      setPreviewCommands(previewCommands);
+    } catch {}
+  }, [value, placeholder]);
 
   const _activeCommand = React.useMemo(() => {
     if (!activeCommand) return null;
