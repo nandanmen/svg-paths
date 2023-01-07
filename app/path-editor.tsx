@@ -2,7 +2,7 @@
 
 import React from "react";
 import type { Line } from "@codemirror/state";
-import { ViewUpdate } from "@codemirror/view";
+import { EditorView, ViewUpdate } from "@codemirror/view";
 import {
   startCompletion,
   completionStatus,
@@ -42,6 +42,9 @@ type PathEditorProps = {
   initialValue: string;
   onValueChange: (value: string) => void;
   onPlaceholderChange: (placeholder: string | null) => void;
+  onActiveCommandChange: (
+    update: { command: number; arg: number } | null
+  ) => void;
 };
 
 const getYOffset = (node?: HTMLElement) => {
@@ -53,10 +56,38 @@ const getYOffset = (node?: HTMLElement) => {
   return el.offsetTop;
 };
 
+const splitWithIndex = (text: string) => {
+  const parts = [];
+
+  let start = 0;
+  while (start < text.length) {
+    const end = text.indexOf(" ", start);
+    if (end === -1) {
+      parts.push({ text: text.slice(start), index: start });
+      break;
+    }
+    parts.push({ text: text.slice(start, end), index: start });
+    start = end + 1;
+  }
+
+  return parts;
+};
+
+const createCommandUpdate = (pos: number, view: EditorView) => {
+  const line = view.state.doc.lineAt(pos);
+  const [, ...parts] = splitWithIndex(line.text);
+  const offset = pos - line.from;
+  const arg = parts.findIndex(
+    (part) => offset >= part.index && offset <= part.index + part.text.length
+  );
+  return { command: line.number - 1, arg };
+};
+
 export function PathEditor({
   initialValue,
   onValueChange,
   onPlaceholderChange,
+  onActiveCommandChange,
 }: PathEditorProps) {
   const [placeholder, setPlaceholder] = React.useState<string | null>(null);
   const [line, setLine] = React.useState<{
@@ -109,10 +140,12 @@ export function PathEditor({
                 if (isNaN(newVal)) return;
                 setText(newVal.toString());
               },
-              onDragStart: ({ pos }) => console.log("drag start " + pos),
-              onDragEnd: ({ pos }) => console.log("drag end " + pos),
-              onHoverStart: ({ pos }) => console.log("hover start " + pos),
-              onHoverEnd: ({ pos }) => console.log("hover end " + pos),
+              onDragStart: ({ pos }, view) =>
+                onActiveCommandChange(createCommandUpdate(pos, view)),
+              onDragEnd: () => onActiveCommandChange(null),
+              onHoverStart: ({ pos }, view) =>
+                onActiveCommandChange(createCommandUpdate(pos, view)),
+              onHoverEnd: () => onActiveCommandChange(null),
             },
           ]}
         />
