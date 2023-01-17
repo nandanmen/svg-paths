@@ -145,7 +145,7 @@ export function PathEditor({
               onDrag: (text, setText, e) => {
                 const newVal = Number(text) + transformSlide(e.movementX);
                 if (isNaN(newVal)) return;
-                setText(newVal.toString());
+                setText(newVal.toFixed(1));
               },
               onMatchChange: (target, view) => {
                 if (!target) onActiveCommandChange(null);

@@ -36,10 +36,25 @@ const usePathCommands = () => {
   return context;
 };
 
-const parse = (value: string) => {};
+type IViewBoxContext = {
+  size: number;
+  setSize: (size: number) => void;
+  getRelativeSize: (size: number) => number;
+};
+
+const ViewBoxContext = React.createContext<IViewBoxContext | null>(null);
+
+const useViewBoxContext = () => {
+  const context = React.useContext(ViewBoxContext);
+  if (!context) {
+    throw new Error("useViewBoxContext must be used within a ViewBoxContext");
+  }
+  return context;
+};
 
 export function App() {
   const [value, setValue] = React.useState("M 10 20");
+  const [size, setSize] = React.useState(24);
   const [placeholder, setPlaceholder] = React.useState<string | null>(null);
   const [activeCommand, setActiveCommand] = React.useState<{
     command: number;
@@ -68,6 +83,13 @@ export function App() {
     };
   }, [commands, activeCommand]);
 
+  const getRelativeSize = React.useCallback(
+    (value: number) => {
+      return (value / 100) * size;
+    },
+    [size]
+  );
+
   return (
     <div className="flex h-full gap-6">
       <aside className="w-[35ch] flex-shrink-0">
@@ -85,27 +107,29 @@ export function App() {
           <PathCommandsContext.Provider
             value={{ commands, previewCommands, activeCommand: _activeCommand }}
           >
-            <GridSquare size={100} gap={10} padding={4}>
-              <Lines preview />
-              <Lines />
-              <path
-                d={`${value}\n${placeholder ?? ""}`}
-                stroke="currentColor"
-                strokeWidth="1"
-                className="text-slate-9"
-                fill="none"
-              />
-              <path
-                d={value}
-                stroke="currentColor"
-                strokeWidth="1"
-                className="text-slate-12"
-                fill="none"
-              />
-              <CurvePoints preview />
-              <CurvePoints />
-              <CursorPoints />
-            </GridSquare>
+            <ViewBoxContext.Provider value={{ size, setSize, getRelativeSize }}>
+              <GridSquare gap={10} padding={4}>
+                <Lines preview />
+                <Lines />
+                <path
+                  d={`${value}\n${placeholder ?? ""}`}
+                  stroke="currentColor"
+                  strokeWidth={getRelativeSize(1)}
+                  className="text-slate-9"
+                  fill="none"
+                />
+                <path
+                  d={value}
+                  stroke="currentColor"
+                  strokeWidth={getRelativeSize(1)}
+                  className="text-slate-12"
+                  fill="none"
+                />
+                <CurvePoints preview />
+                <CurvePoints />
+                <CursorPoints />
+              </GridSquare>
+            </ViewBoxContext.Provider>
           </PathCommandsContext.Provider>
         </main>
       </div>
@@ -114,6 +138,7 @@ export function App() {
 }
 
 const Lines = ({ preview = false }: { preview?: boolean }) => {
+  const { getRelativeSize } = useViewBoxContext();
   const { commands, previewCommands } = usePathCommands();
   const _commands = preview ? previewCommands : commands;
   return (
@@ -130,7 +155,7 @@ const Lines = ({ preview = false }: { preview?: boolean }) => {
                 x2={command.x}
                 y2={command.y}
                 className="text-slate-6"
-                strokeDasharray="1"
+                strokeDasharray={getRelativeSize(1)}
               />
             );
           case "Q": {
@@ -145,9 +170,15 @@ const Lines = ({ preview = false }: { preview?: boolean }) => {
                   y1={cursor.y}
                   x2={x1}
                   y2={y1}
-                  strokeDasharray="1"
+                  strokeDasharray={getRelativeSize(1)}
                 />
-                <Line x1={x1} y1={y1} x2={x} y2={y} strokeDasharray="1" />
+                <Line
+                  x1={x1}
+                  y1={y1}
+                  x2={x}
+                  y2={y}
+                  strokeDasharray={getRelativeSize(1)}
+                />
               </g>
             );
           }
@@ -160,7 +191,10 @@ const Lines = ({ preview = false }: { preview?: boolean }) => {
 };
 
 const Line = (props: React.ComponentPropsWithoutRef<"line">) => {
-  return <line stroke="currentColor" strokeWidth="0.5" {...props} />;
+  const { getRelativeSize } = useViewBoxContext();
+  return (
+    <line stroke="currentColor" strokeWidth={getRelativeSize(0.5)} {...props} />
+  );
 };
 
 const isActive = (
@@ -172,8 +206,13 @@ const isActive = (
 };
 
 const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
+  const { getRelativeSize } = useViewBoxContext();
   const { commands, previewCommands, activeCommand } = usePathCommands();
   const _commands = preview ? previewCommands : commands;
+
+  const outlineWidth = getRelativeSize(3);
+  const innerWidth = getRelativeSize(2);
+
   return (
     <>
       {_commands.map((command, i) => {
@@ -188,17 +227,23 @@ const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
                 className={preview ? "text-slate-6" : "text-blue-9"}
               >
                 <motion.rect
-                  width="3"
-                  height="3"
-                  x="-1.5"
-                  y="-1.5"
+                  width={outlineWidth}
+                  height={outlineWidth}
+                  x={-outlineWidth / 2}
+                  y={-outlineWidth / 2}
                   stroke="currentColor"
                   fill="none"
-                  strokeWidth="0.2"
+                  strokeWidth={getRelativeSize(0.2)}
                   animate={{ scale: !preview && active ? 1 : 0 }}
                   initial={{ scale: 0 }}
                 />
-                <rect x="-1" y="-1" width="2" height="2" fill="currentColor" />
+                <rect
+                  x={-innerWidth / 2}
+                  y={-innerWidth / 2}
+                  width={innerWidth}
+                  height={innerWidth}
+                  fill="currentColor"
+                />
               </motion.g>
             );
           }
@@ -212,14 +257,15 @@ const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
 
 const CursorPoints = () => {
   const { commands, activeCommand } = usePathCommands();
+  const { getRelativeSize } = useViewBoxContext();
   return (
     <>
       <circle
-        r="1"
+        r={getRelativeSize(1)}
         cx="0"
         cy="0"
         className="fill-slate-2 stroke-slate-12"
-        strokeWidth="0.2"
+        strokeWidth={getRelativeSize(0.2)}
       />
       {commands.map((_, i) => {
         const { x, y } = getCursorAtIndex(commands, i);
@@ -229,17 +275,17 @@ const CursorPoints = () => {
             <motion.circle
               cx="0"
               cy="0"
-              r="2"
+              r={getRelativeSize(2)}
               className="fill-blue-8"
               animate={{ scale: active ? 1 : 0 }}
               initial={{ scale: 0 }}
             />
             <circle
-              r="1"
+              r={getRelativeSize(1)}
               cx="0"
               cy="0"
               className="fill-slate-2 stroke-slate-12"
-              strokeWidth="0.2"
+              strokeWidth={getRelativeSize(0.2)}
             />
           </motion.g>
         );
@@ -263,7 +309,14 @@ const getCursorAtIndex = (commands: Command[], index: number): Cursor => {
       case "M":
       case "L":
       case "Q":
+      case "C":
         cursor.x = command.x;
+        cursor.y = command.y;
+        break;
+      case "H":
+        cursor.x = command.x;
+        break;
+      case "V":
         cursor.y = command.y;
         break;
     }
@@ -281,7 +334,6 @@ const range = (start: number, end: number, step = 1) => {
 };
 
 type GridSquareProps = {
-  size: number;
   gap: number;
   padding: number;
   children?: React.ReactNode;
@@ -307,27 +359,45 @@ const getActiveLine = (
   };
 };
 
-const GridSquare = ({ size, gap, padding, children }: GridSquareProps) => {
+const GridSquare = ({ gap, padding, children }: GridSquareProps) => {
+  const { size, getRelativeSize } = useViewBoxContext();
   const { commands, activeCommand } = usePathCommands();
+
+  const _padding = getRelativeSize(padding);
+
   const cols = range(0, size, gap);
   const rows = range(0, size, gap);
-  const viewBox = `-${padding} -${padding} ${size + padding * 2} ${
-    size + padding * 2
+  const viewBox = `-${_padding} -${_padding} ${size + _padding * 2} ${
+    size + _padding * 2
   }`;
-  const max = size + padding * 2;
-  const min = -padding;
+  const max = size + _padding * 2;
+  const min = -_padding;
   const activeLine = getActiveLine(commands, activeCommand);
   return (
     <svg viewBox={viewBox} width="100%" height="100%">
       <g className="text-slate-3">
         {cols.map((x) => {
           return (
-            <Line key={x} x1={x} x2={x} y1={min} y2={max} strokeWidth="0.2" />
+            <Line
+              key={x}
+              x1={x}
+              x2={x}
+              y1={min}
+              y2={max}
+              strokeWidth={getRelativeSize(0.2)}
+            />
           );
         })}
         {rows.map((y) => {
           return (
-            <Line key={y} x1={min} x2={max} y1={y} y2={y} strokeWidth="0.2" />
+            <Line
+              key={y}
+              x1={min}
+              x2={max}
+              y1={y}
+              y2={y}
+              strokeWidth={getRelativeSize(0.2)}
+            />
           );
         })}
         <AnimatePresence>
@@ -344,8 +414,10 @@ const GridSquare = ({ size, gap, padding, children }: GridSquareProps) => {
                   x2={activeLine.offset}
                   y1={min}
                   y2={max}
-                  strokeWidth="0.5"
-                  strokeDasharray="2 1"
+                  strokeWidth={getRelativeSize(0.5)}
+                  strokeDasharray={`${getRelativeSize(2)} ${getRelativeSize(
+                    1
+                  )}`}
                 />
               ) : (
                 <Line
@@ -353,8 +425,10 @@ const GridSquare = ({ size, gap, padding, children }: GridSquareProps) => {
                   y2={activeLine.offset}
                   x1={min}
                   x2={max}
-                  strokeWidth="0.5"
-                  strokeDasharray="2 1"
+                  strokeWidth={getRelativeSize(0.5)}
+                  strokeDasharray={`${getRelativeSize(2)} ${getRelativeSize(
+                    1
+                  )}`}
                 />
               )}
             </motion.g>
