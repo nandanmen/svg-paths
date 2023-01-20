@@ -54,7 +54,7 @@ const useViewBoxContext = () => {
 
 export function App() {
   const [value, setValue] = React.useState("M 10 20");
-  const [size, setSize] = React.useState(24);
+  const [size, setSize] = React.useState(100);
   const [placeholder, setPlaceholder] = React.useState<string | null>(null);
   const [activeCommand, setActiveCommand] = React.useState<{
     command: number;
@@ -115,7 +115,7 @@ export function App() {
                   d={`${value}\n${placeholder ?? ""}`}
                   stroke="currentColor"
                   strokeWidth={getRelativeSize(1)}
-                  className="text-slate-9"
+                  className="text-slate-8"
                   fill="none"
                 />
                 <path
@@ -154,31 +154,16 @@ const Lines = ({ preview = false }: { preview?: boolean }) => {
                 y1={cursor.y}
                 x2={command.x}
                 y2={command.y}
-                className="text-slate-6"
+                className="text-slate-8"
                 strokeDasharray={getRelativeSize(1)}
               />
             );
           case "Q": {
             const { x1, y1, x, y } = command;
             return (
-              <g
-                key={`${command.code}-${i}`}
-                className={preview ? "text-slate-6" : "text-blue-9"}
-              >
-                <Line
-                  x1={cursor.x}
-                  y1={cursor.y}
-                  x2={x1}
-                  y2={y1}
-                  strokeDasharray={getRelativeSize(1)}
-                />
-                <Line
-                  x1={x1}
-                  y1={y1}
-                  x2={x}
-                  y2={y}
-                  strokeDasharray={getRelativeSize(1)}
-                />
+              <g key={`${command.code}-${i}`} className="text-slate-8">
+                <Line x1={cursor.x} y1={cursor.y} x2={x1} y2={y1} />
+                <Line x1={x1} y1={y1} x2={x} y2={y} />
               </g>
             );
           }
@@ -224,7 +209,7 @@ const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
               <motion.g
                 key={`${command.code}-${i}`}
                 style={{ x: x1, y: y1, rotate: 45 }}
-                className={preview ? "text-slate-6" : "text-blue-9"}
+                className={preview ? "text-slate-6" : "text-slate-12"}
               >
                 <motion.rect
                   width={outlineWidth}
@@ -233,7 +218,7 @@ const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
                   y={-outlineWidth / 2}
                   stroke="currentColor"
                   fill="none"
-                  strokeWidth={getRelativeSize(0.2)}
+                  strokeWidth={getRelativeSize(0.5)}
                   animate={{ scale: !preview && active ? 1 : 0 }}
                   initial={{ scale: 0 }}
                 />
@@ -265,7 +250,7 @@ const CursorPoints = () => {
         cx="0"
         cy="0"
         className="fill-slate-2 stroke-slate-12"
-        strokeWidth={getRelativeSize(0.2)}
+        strokeWidth={getRelativeSize(0.5)}
       />
       {commands.map((_, i) => {
         const { x, y } = getCursorAtIndex(commands, i);
@@ -285,7 +270,7 @@ const CursorPoints = () => {
               cx="0"
               cy="0"
               className="fill-slate-2 stroke-slate-12"
-              strokeWidth={getRelativeSize(0.2)}
+              strokeWidth={getRelativeSize(0.5)}
             />
           </motion.g>
         );
@@ -375,7 +360,7 @@ const GridSquare = ({ gap, padding, children }: GridSquareProps) => {
   const activeLine = getActiveLine(commands, activeCommand);
   return (
     <svg viewBox={viewBox} width="100%" height="100%">
-      <g className="text-slate-3">
+      <g className="text-slate-6">
         {cols.map((x) => {
           return (
             <Line

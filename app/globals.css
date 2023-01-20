@@ -33,11 +33,11 @@
 }
 
 .cm-editor .cm-gutters {
-  @apply bg-background border-none;
+  @apply bg-slate-1 text-slate-11 border-none;
 }
 
 .cm-editor .cm-activeLineGutter {
-  @apply bg-background;
+  @apply bg-slate-1;
 }
 
 .cm-editor .cm-foldGutter .cm-gutterElement.cm-activeLineGutter {
@@ -46,9 +46,9 @@
 
 .cm-editor .cm-foldGutter .cm-gutterElement.cm-activeLineGutter:after {
   content: "";
-  @apply absolute right-0 top-0 bottom-0 w-1 bg-slate-4;
+  @apply absolute right-0 top-0 bottom-0 w-1 bg-slate-12;
 }
 
 .cm-editor .cm-activeLine {
-  @apply bg-slate-3;
+  @apply bg-slate-5;
 }

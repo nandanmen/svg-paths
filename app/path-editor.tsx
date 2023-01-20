@@ -189,7 +189,7 @@ type ContainerProps = {
 
 export const Container = ({ className = "", children }: ContainerProps) => {
   return (
-    <div className={`border border-slate-4 relative ${className}`}>
+    <div className={`border border-slate-8 relative ${className}`}>
       {children}
       <Corner className="top-0 left-0 -translate-y-1/2 -translate-x-1/2" />
       <Corner className="top-0 right-0 -translate-y-1/2 translate-x-1/2" />
@@ -200,5 +200,5 @@ export const Container = ({ className = "", children }: ContainerProps) => {
 };
 
 const Corner = ({ className = "" }) => {
-  return <div className={`w-1 h-1 bg-slate-10 absolute ${className}`} />;
+  return <div className={`w-1 h-1 bg-slate-8 absolute ${className}`} />;
 };

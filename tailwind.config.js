@@ -16,7 +16,7 @@ const radixColors = plugin.withOptions(
 
     return ({ addBase }) => {
       addBase({
-        ":root": darkModeColors,
+        ":root": rootColors,
       });
     };
   },

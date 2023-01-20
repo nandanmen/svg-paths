@@ -32,14 +32,11 @@ type EditorProps = {
   interactRules?: InteractRule[];
 };
 
-const theme = EditorView.theme(
-  {
-    ".cm-content": {
-      caretColor: "white",
-    },
+const theme = EditorView.theme({
+  ".cm-content": {
+    caretColor: "white",
   },
-  { dark: true }
-);
+});
 
 export function Editor({
   initialValue,
@@ -73,5 +70,5 @@ export function Editor({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onViewChange]);
 
-  return <div className="h-full text-gray-12 bg-backgroundText" ref={ref} />;
+  return <div className="h-full text-slate-12 bg-slate-1" ref={ref} />;
 }
