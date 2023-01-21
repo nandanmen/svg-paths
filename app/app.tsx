@@ -4,7 +4,7 @@ import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import produce from "immer";
 import { PathEditor } from "./path-editor";
-import { Line } from "./shared";
+import { Endpoint, Line } from "./shared";
 import { Svg, useViewBoxContext } from "./svg";
 import {
   parseSVG,
@@ -204,46 +204,18 @@ const isActive = (
 };
 
 const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
-  const { getRelativeSize } = useViewBoxContext();
-  const { commands, previewCommands, activeCommand } = usePathCommands();
-  const _commands = preview ? previewCommands : commands;
-
-  const outlineWidth = getRelativeSize(3);
-  const innerWidth = getRelativeSize(2);
-
+  const { commands, previewCommands, activeCommand, toAbsolute } =
+    usePathCommands();
+  const _commands = toAbsolute(preview ? previewCommands : commands);
   return (
     <>
+      <Endpoint x={0} y={0} />
       {_commands.map((command, i) => {
         switch (command.code) {
           case "Q": {
             const { x1, y1 } = command;
             const active = isActive(activeCommand, i, ["x1", "y1"]);
-            return (
-              <motion.g
-                key={`${command.code}-${i}`}
-                style={{ x: x1, y: y1, rotate: 45 }}
-                className={preview ? "text-slate-6" : "text-slate-12"}
-              >
-                <motion.rect
-                  width={outlineWidth}
-                  height={outlineWidth}
-                  x={-outlineWidth / 2}
-                  y={-outlineWidth / 2}
-                  stroke="currentColor"
-                  fill="none"
-                  strokeWidth={getRelativeSize(0.5)}
-                  animate={{ scale: !preview && active ? 1 : 0 }}
-                  initial={{ scale: 0 }}
-                />
-                <rect
-                  x={-innerWidth / 2}
-                  y={-innerWidth / 2}
-                  width={innerWidth}
-                  height={innerWidth}
-                  fill="currentColor"
-                />
-              </motion.g>
-            );
+            return <Endpoint x={x1} y={y1} active={active} />;
           }
           default:
             return null;
@@ -254,73 +226,25 @@ const CurvePoints = ({ preview = false }: { preview?: boolean }) => {
 };
 
 const CursorPoints = () => {
-  const { commands, activeCommand } = usePathCommands();
-  const { getRelativeSize } = useViewBoxContext();
+  const { commands, activeCommand, toAbsolute } = usePathCommands();
+  const _commands = toAbsolute(commands);
   return (
     <>
-      <circle
-        r={getRelativeSize(1)}
-        cx="0"
-        cy="0"
-        className="fill-slate-2 stroke-slate-12"
-        strokeWidth={getRelativeSize(0.5)}
-      />
-      {commands.map((_, i) => {
-        const { x, y } = getCursorAtIndex(commands, i);
+      <Endpoint x={0} y={0} isCursor />
+      {_commands.map((command, i) => {
         const active = isActive(activeCommand, i, ["x", "y"]);
         return (
-          <motion.g style={{ x, y }} key={i}>
-            <motion.circle
-              cx="0"
-              cy="0"
-              r={getRelativeSize(2)}
-              className="fill-blue-8"
-              animate={{ scale: active ? 1 : 0 }}
-              initial={{ scale: 0 }}
-            />
-            <circle
-              r={getRelativeSize(1)}
-              cx="0"
-              cy="0"
-              className="fill-slate-2 stroke-slate-12"
-              strokeWidth={getRelativeSize(0.5)}
-            />
-          </motion.g>
+          <Endpoint
+            key={i}
+            x={command.x}
+            y={command.y}
+            active={active}
+            isCursor
+          />
         );
       })}
     </>
   );
-};
-
-type Cursor = {
-  x: number;
-  y: number;
-};
-
-const getCursorAtIndex = (commands: Command[], index: number): Cursor => {
-  const cursor: Cursor = { x: 0, y: 0 };
-
-  if (index < 0) return cursor;
-
-  commands.slice(0, index + 1).forEach((command) => {
-    switch (command.code) {
-      case "M":
-      case "L":
-      case "Q":
-      case "C":
-        cursor.x = command.x;
-        cursor.y = command.y;
-        break;
-      case "H":
-        cursor.x = command.x;
-        break;
-      case "V":
-        cursor.y = command.y;
-        break;
-    }
-  });
-
-  return cursor;
 };
 
 const getActiveLine = (
