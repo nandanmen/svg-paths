@@ -48,7 +48,3 @@
   content: "";
   @apply absolute right-0 top-0 bottom-0 w-1 bg-slate-12;
 }
-
-.cm-editor .cm-activeLine {
-  @apply bg-slate-5;
-}

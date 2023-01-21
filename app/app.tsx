@@ -2,8 +2,16 @@
 
 import React from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import produce from "immer";
 import { PathEditor } from "./path-editor";
-import { parseSVG, type Command } from "svg-path-parser";
+import { Line } from "./shared";
+import { Svg, useViewBoxContext } from "./svg";
+import {
+  parseSVG,
+  makeAbsolute,
+  type Command,
+  type CommandMadeAbsolute,
+} from "svg-path-parser";
 
 type ActiveCommand = {
   index: number;
@@ -12,6 +20,7 @@ type ActiveCommand = {
 
 type IPathCommandsContext = {
   commands: Command[];
+  toAbsolute: (commands: Command[]) => CommandMadeAbsolute[];
   previewCommands: Command[];
   activeCommand: ActiveCommand | null;
 };
@@ -32,22 +41,6 @@ const usePathCommands = () => {
     throw new Error(
       "usePathCommands must be used within a PathCommandsProvider"
     );
-  }
-  return context;
-};
-
-type IViewBoxContext = {
-  size: number;
-  setSize: (size: number) => void;
-  getRelativeSize: (size: number) => number;
-};
-
-const ViewBoxContext = React.createContext<IViewBoxContext | null>(null);
-
-const useViewBoxContext = () => {
-  const context = React.useContext(ViewBoxContext);
-  if (!context) {
-    throw new Error("useViewBoxContext must be used within a ViewBoxContext");
   }
   return context;
 };
@@ -83,12 +76,11 @@ export function App() {
     };
   }, [commands, activeCommand]);
 
-  const getRelativeSize = React.useCallback(
-    (value: number) => {
-      return (value / 100) * size;
-    },
-    [size]
-  );
+  const toAbsolute = React.useCallback((commands: Command[]) => {
+    return produce(commands, (draft) =>
+      makeAbsolute(draft)
+    ) as CommandMadeAbsolute[];
+  }, []);
 
   return (
     <div className="flex h-full gap-6">
@@ -105,31 +97,22 @@ export function App() {
       <div className="w-fit overflow-x-auto">
         <main className="aspect-square h-full">
           <PathCommandsContext.Provider
-            value={{ commands, previewCommands, activeCommand: _activeCommand }}
+            value={{
+              commands,
+              previewCommands,
+              activeCommand: _activeCommand,
+              toAbsolute,
+            }}
           >
-            <ViewBoxContext.Provider value={{ size, setSize, getRelativeSize }}>
-              <GridSquare gap={10} padding={4}>
-                <Lines preview />
-                <Lines />
-                <path
-                  d={`${value}\n${placeholder ?? ""}`}
-                  stroke="currentColor"
-                  strokeWidth={getRelativeSize(1)}
-                  className="text-slate-8"
-                  fill="none"
-                />
-                <path
-                  d={value}
-                  stroke="currentColor"
-                  strokeWidth={getRelativeSize(1)}
-                  className="text-slate-12"
-                  fill="none"
-                />
-                <CurvePoints preview />
-                <CurvePoints />
-                <CursorPoints />
-              </GridSquare>
-            </ViewBoxContext.Provider>
+            <Svg size={size} onSizeChange={setSize} gap={5} padding={4}>
+              <ActiveLine />
+              <Lines preview />
+              <Lines />
+              <Paths value={value} placeholder={placeholder} />
+              <CurvePoints preview />
+              <CurvePoints />
+              <CursorPoints />
+            </Svg>
           </PathCommandsContext.Provider>
         </main>
       </div>
@@ -137,32 +120,69 @@ export function App() {
   );
 }
 
+const Paths = ({
+  value,
+  placeholder,
+}: {
+  value: string;
+  placeholder: string | null;
+}) => {
+  const { getRelativeSize } = useViewBoxContext();
+  return (
+    <g>
+      <path
+        d={`${value}\n${placeholder ?? ""}`}
+        stroke="currentColor"
+        strokeWidth={getRelativeSize(1)}
+        className="text-slate-8"
+        fill="none"
+      />
+      <path
+        d={value}
+        stroke="currentColor"
+        strokeWidth={getRelativeSize(1)}
+        className="text-slate-12"
+        fill="none"
+      />
+    </g>
+  );
+};
+
 const Lines = ({ preview = false }: { preview?: boolean }) => {
   const { getRelativeSize } = useViewBoxContext();
-  const { commands, previewCommands } = usePathCommands();
-  const _commands = preview ? previewCommands : commands;
+  const { commands, previewCommands, toAbsolute } = usePathCommands();
+  const _commands = toAbsolute(preview ? previewCommands : commands);
   return (
     <>
       {_commands.map((command, i) => {
-        const cursor = getCursorAtIndex(commands, i - 1);
         switch (command.code) {
-          case "M":
+          case "M": {
             return (
               <Line
                 key={`${command.code}-${i}`}
-                x1={cursor.x}
-                y1={cursor.y}
+                x1={command.x0}
+                y1={command.y0}
                 x2={command.x}
                 y2={command.y}
                 className="text-slate-8"
                 strokeDasharray={getRelativeSize(1)}
               />
             );
-          case "Q": {
-            const { x1, y1, x, y } = command;
+          }
+          case "C": {
+            const { x1, y1, x2, y2, x, y, x0, y0 } = command;
             return (
               <g key={`${command.code}-${i}`} className="text-slate-8">
-                <Line x1={cursor.x} y1={cursor.y} x2={x1} y2={y1} />
+                <Line x1={x0} y1={y0} x2={x1} y2={y1} />
+                <Line x1={x2} y1={y2} x2={x} y2={y} />
+              </g>
+            );
+          }
+          case "Q": {
+            const { x1, y1, x, y, x0, y0 } = command;
+            return (
+              <g key={`${command.code}-${i}`} className="text-slate-8">
+                <Line x1={x0} y1={y0} x2={x1} y2={y1} />
                 <Line x1={x1} y1={y1} x2={x} y2={y} />
               </g>
             );
@@ -172,13 +192,6 @@ const Lines = ({ preview = false }: { preview?: boolean }) => {
         }
       })}
     </>
-  );
-};
-
-const Line = (props: React.ComponentPropsWithoutRef<"line">) => {
-  const { getRelativeSize } = useViewBoxContext();
-  return (
-    <line stroke="currentColor" strokeWidth={getRelativeSize(0.5)} {...props} />
   );
 };
 
@@ -310,20 +323,6 @@ const getCursorAtIndex = (commands: Command[], index: number): Cursor => {
   return cursor;
 };
 
-const range = (start: number, end: number, step = 1) => {
-  const result = [];
-  for (let i = start; i <= end; i += step) {
-    result.push(i);
-  }
-  return result;
-};
-
-type GridSquareProps = {
-  gap: number;
-  padding: number;
-  children?: React.ReactNode;
-};
-
 const getActiveLine = (
   commands: Command[],
   activeCommand: ActiveCommand | null
@@ -344,83 +343,40 @@ const getActiveLine = (
   };
 };
 
-const GridSquare = ({ gap, padding, children }: GridSquareProps) => {
-  const { size, getRelativeSize } = useViewBoxContext();
+const ActiveLine = () => {
   const { commands, activeCommand } = usePathCommands();
-
-  const _padding = getRelativeSize(padding);
-
-  const cols = range(0, size, gap);
-  const rows = range(0, size, gap);
-  const viewBox = `-${_padding} -${_padding} ${size + _padding * 2} ${
-    size + _padding * 2
-  }`;
-  const max = size + _padding * 2;
-  const min = -_padding;
+  const { min, max, getRelativeSize } = useViewBoxContext();
   const activeLine = getActiveLine(commands, activeCommand);
   return (
-    <svg viewBox={viewBox} width="100%" height="100%">
-      <g className="text-slate-6">
-        {cols.map((x) => {
-          return (
+    <AnimatePresence>
+      {activeLine && (
+        <motion.g
+          className="text-slate-8"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+        >
+          {activeLine.axis === "x" ? (
             <Line
-              key={x}
-              x1={x}
-              x2={x}
+              x1={activeLine.offset}
+              x2={activeLine.offset}
               y1={min}
               y2={max}
-              strokeWidth={getRelativeSize(0.2)}
+              strokeWidth={getRelativeSize(0.5)}
+              strokeDasharray={`${getRelativeSize(2)} ${getRelativeSize(1)}`}
             />
-          );
-        })}
-        {rows.map((y) => {
-          return (
+          ) : (
             <Line
-              key={y}
+              y1={activeLine.offset}
+              y2={activeLine.offset}
               x1={min}
               x2={max}
-              y1={y}
-              y2={y}
-              strokeWidth={getRelativeSize(0.2)}
+              strokeWidth={getRelativeSize(0.5)}
+              strokeDasharray={`${getRelativeSize(2)} ${getRelativeSize(1)}`}
             />
-          );
-        })}
-        <AnimatePresence>
-          {activeLine && (
-            <motion.g
-              className="text-slate-8"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-            >
-              {activeLine.axis === "x" ? (
-                <Line
-                  x1={activeLine.offset}
-                  x2={activeLine.offset}
-                  y1={min}
-                  y2={max}
-                  strokeWidth={getRelativeSize(0.5)}
-                  strokeDasharray={`${getRelativeSize(2)} ${getRelativeSize(
-                    1
-                  )}`}
-                />
-              ) : (
-                <Line
-                  y1={activeLine.offset}
-                  y2={activeLine.offset}
-                  x1={min}
-                  x2={max}
-                  strokeWidth={getRelativeSize(0.5)}
-                  strokeDasharray={`${getRelativeSize(2)} ${getRelativeSize(
-                    1
-                  )}`}
-                />
-              )}
-            </motion.g>
           )}
-        </AnimatePresence>
-      </g>
-      {children}
-    </svg>
+        </motion.g>
+      )}
+    </AnimatePresence>
   );
 };
