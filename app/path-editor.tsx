@@ -11,6 +11,7 @@ import {
 import { motion, transform } from "framer-motion";
 import Balancer from "react-wrap-balancer";
 import { Editor } from "./editor";
+import { parseSVG, type Command } from "svg-path-parser";
 
 const transformSlide = transform([-1, 1], [-0.5, 0.5], { clamp: false });
 
@@ -90,6 +91,16 @@ const createCommandUpdate = (pos: number, view: EditorView) => {
   return { command: line.number - 1, arg };
 };
 
+const toPath = (command: Command) => {
+  const { code, command: _, relative, ...args } = command;
+  if (code === "A" || code === "a") {
+    return `${code} ${command.rx} ${command.ry} ${command.xAxisRotation} ${
+      command.largeArc ? "1" : "0"
+    } ${command.sweep ? "1" : "0"} ${command.x} ${command.y}`;
+  }
+  return `${code} ${Object.values(args).join(" ")}`;
+};
+
 export function PathEditor({
   initialValue,
   onValueChange,
@@ -130,14 +141,23 @@ export function PathEditor({
     },
     [onValueChange]
   );
-
   const yOffset = getYOffset(line?.node as HTMLElement);
+
+  const handlePaste = React.useCallback((text: string, view: EditorView) => {
+    try {
+      const commands = parseSVG(text);
+      const asPath = commands.map(toPath).join("\n");
+      view.dispatch(view.state.replaceSelection(asPath));
+    } catch {}
+  }, []);
+
   return (
     <div className="relative h-full">
       <Container className="h-full">
         <Editor
           initialValue={initialValue}
           onViewChange={onViewChange}
+          onPaste={handlePaste}
           interactRules={[
             {
               regexp: /-?\b\d+\.?\d*\b/g,

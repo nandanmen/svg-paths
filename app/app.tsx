@@ -84,7 +84,18 @@ export function App() {
 
   return (
     <div className="flex h-full gap-6">
-      <aside className="w-[35ch] flex-shrink-0">
+      <aside className="w-[35ch] flex-shrink-0 flex flex-col">
+        <div className="flex font-mono mb-4">
+          <input
+            type="range"
+            value={size}
+            onChange={(evt) => setSize(evt.target.valueAsNumber)}
+            min={25}
+            max={200}
+            step={5}
+          />
+          <p className="ml-auto text-sm">size: {size}</p>
+        </div>
         <PathEditor
           initialValue={value}
           onValueChange={setValue}

@@ -29,6 +29,7 @@ function myCompletions(context: CompletionContext): CompletionResult | null {
 type EditorProps = {
   initialValue: string;
   onViewChange: (update: ViewUpdate) => void;
+  onPaste?: (text: string, view: EditorView) => void;
   interactRules?: InteractRule[];
 };
 
@@ -41,6 +42,7 @@ const theme = EditorView.theme({
 export function Editor({
   initialValue,
   onViewChange,
+  onPaste,
   interactRules = [],
 }: EditorProps) {
   const ref = React.useRef(null);
@@ -53,6 +55,15 @@ export function Editor({
         doc: initialValue,
         extensions: [
           EditorView.updateListener.of(onViewChange),
+          EditorView.domEventHandlers({
+            paste: (evt, view) => {
+              const data = evt.clipboardData?.getData("text/plain");
+              if (data && onPaste) {
+                evt.preventDefault();
+                onPaste(data, view);
+              }
+            },
+          }),
           basicSetup,
           theme,
           autocompletion({
@@ -68,7 +79,7 @@ export function Editor({
 
     return () => view.destroy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [onViewChange]);
+  }, [onViewChange, onPaste]);
 
   return <div className="h-full text-slate-12 bg-slate-1" ref={ref} />;
 }
